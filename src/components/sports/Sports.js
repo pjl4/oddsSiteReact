@@ -3,7 +3,11 @@ import './sports.css';
 
 class Sports extends Component {
     render() {
-        return <button className="three columns">Sport Name</button>;
+        return (
+            <button data-set={this.props.index} className="three columns">
+                Sport Name
+            </button>
+        );
     }
 }
 

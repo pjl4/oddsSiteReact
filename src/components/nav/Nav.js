@@ -11,7 +11,7 @@ class Nav extends Component {
                         onClick={this.props.toggleHome}
                         className="eight columns"
                     >
-                        Nav
+                        Sports Odds Site
                     </h1>
                     <Login></Login>
                 </div>

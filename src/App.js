@@ -2,35 +2,31 @@ import React from 'react';
 import './App.css';
 import Home from './components/home/Home';
 import Nav from './components/nav/Nav';
-import Sports from './components/sports/Sports';
+import Odds from './components/odds/Odds';
 const axios = require('axios');
-const url = `https://api.the-odds-api.com/v3/sports/?apiKey=${process.env.REACT_APP_ODDS_API_KEY}`;
 class App extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            homePage: true,
-            sports: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+            games: []
         };
     }
-    componentDidMount() {
+    callToAPI = sportName => {
+        const url = `https://api.the-odds-api.com/v3/odds/?apiKey=${process.env.REACT_APP_ODDS_API_KEY}&sport=${sportName}&region=us&market=h2h`;
         axios
             .get(url)
-            .then(res => this.setState({ sports: res }))
+            .then(res => this.setState({ games: res.data }))
             .catch(error => console.log(error));
-    }
-    toggleHome = () => this.setState({ homePage: !this.state.homePage });
+    };
+
     render() {
         return (
             <div className="App">
-                <Nav toggleHome={this.toggleHome}></Nav>
-                <main>{this.state.homePage && <Home></Home>}</main>
-                <section className="sports">
-                    {this.state.sports.length &&
-                        this.state.sports.map((sport, index) => (
-                            <Sports index={index} sport={sport}></Sports>
-                        ))}
-                </section>
+                <Nav></Nav>
+                <Home></Home>
+                {this.state.games.length && (
+                    <Odds games={this.state.games}></Odds>
+                )}
             </div>
         );
     }

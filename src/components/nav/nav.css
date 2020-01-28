@@ -1,11 +1,12 @@
 header button {
-    margin-top: 10px;
-    background-color: aquamarine;
+	margin-top: 10px;
+	background-color: #dbaca2;
+	color: white;
 }
 header {
-    background-color: blanchedalmond;
+	background-color: #acb9cb;
 }
 header h1 {
-    text-align: left;
-    margin: 5px, 5px, 5px, 5px;
+	text-align: left;
+	margin: 5px, 5px, 5px, 5px;
 }

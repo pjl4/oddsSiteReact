@@ -1,3 +1,8 @@
 .sports button {
-    margin-left: 0;
+	margin-left: 0;
+	background-color: #ffe9c1;
+	color: #77879d;
+}
+.sports {
+	background-color: #77879d;
 }

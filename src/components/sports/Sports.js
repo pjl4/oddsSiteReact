@@ -2,13 +2,16 @@ import React, { Component } from 'react';
 import './sports.css';
 
 class Sports extends Component {
-    render() {
-        return (
-            <button data-set={this.props.index} className="three columns">
-                Sport Name
-            </button>
-        );
-    }
+	render() {
+		return (
+			<button
+				onClick={() => this.props.setClickedSport(this.props.sport.key)}
+				className="four columns"
+			>
+				{this.props.sport.title}
+			</button>
+		);
+	}
 }
 
 export default Sports;

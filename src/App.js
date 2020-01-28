@@ -3,6 +3,13 @@ import './App.css';
 import Home from './components/home/Home';
 import Nav from './components/nav/Nav';
 import Odds from './components/odds/Odds';
+import { ClipLoader } from 'react-spinners';
+import { css } from '@emotion/core';
+const override = css`
+	display: block;
+	margin: 0 auto;
+	border-color: red;
+`;
 const axios = require('axios');
 class App extends React.Component {
 	constructor(props) {
@@ -10,30 +17,25 @@ class App extends React.Component {
 		this.state = {
 			clickedSport: null,
 			games: [],
-			formattedGames: []
+			formattedGames: [],
+			loading: false
 		};
 	}
 	setClickedSport = (clickedSport) => {
-		this.setState({ clickedSport }, () => {
-			this.callToAPI(clickedSport);
-			this.setFormattedGames();
-			console.log('formatted', this.state.formattedGames);
+		this.setState({ clickedSport, loading: true }, async () => {
+			try {
+				await this.callToAPI(clickedSport);
+				await this.setFormattedGames();
+			} catch (error) {
+				console.log(error);
+			}
 		});
 	};
-	setFormattedGames = () => {
-		let formatedGames = this.formatGamesObject();
-		this.setState({ formatedGames: formatedGames });
+	setFormattedGames = async () => {
+		let formattedGames = await this.formatGamesObject();
+		this.setState({ formattedGames: formattedGames, loading: false });
 	};
-	callToAPI = (sportName) => {
-		const url = `https://api.the-odds-api.com/v3/odds/?apiKey=${process.env.REACT_APP_ODDS_API_KEY}&sport=${sportName}&region=us&market=h2h`;
-		axios
-			.get(url)
-			.then((res) => {
-				this.setState({ games: res.data.data });
-				console.log(res);
-			})
-			.catch((error) => console.log(error));
-	};
+
 	render() {
 		return (
 			<div className="App">
@@ -43,16 +45,24 @@ class App extends React.Component {
 					this.state.formattedGames.map((game, index) => (
 						<Odds key={index} game={game}></Odds>
 					))}
+				{this.state.loading && (
+					<ClipLoader
+						css={override}
+						size={100}
+						color={'#red'}
+						loading={this.state.loading}
+					/>
+				)}
 			</div>
 		);
 	}
-	formatGamesObject = () => {
+	formatGamesObject = async () => {
 		let formattedGames = [];
 		let games = this.state.games;
-		console.log('state games', this.state.games);
+		console.log('games', this.state.games);
 		let currentGame;
-		for (let i = 0; i < games; i++) {
-			let lines = games[i].sites[0].odds.h2h;
+		for (let i = 0; i < games.length; i++) {
+			let lines = games[i].sites[0].odds.h2h.length;
 			if (lines === 3) {
 				currentGame = this.createThreeLinesObject(games[i]);
 				currentGame.lines = 3;
@@ -65,10 +75,18 @@ class App extends React.Component {
 		}
 		return formattedGames;
 	};
+	async callToAPI(sportName) {
+		const url = `https://api.the-odds-api.com/v3/odds/?apiKey=${process.env.REACT_APP_ODDS_API_KEY}&sport=${sportName}&region=us&market=h2h`;
+		await axios
+			.get(url)
+			.then((res) => {
+				this.setState({ games: res.data.data });
+			})
+			.catch((error) => console.log(error));
+	}
 	getCurrentTime = (unixTime) => {
-		let dateObj = new Date(unixTime * 1000);
-		let utcString = dateObj.toUTCString();
-		let time = utcString.slice(-11, -4);
+		let dateObj = new Date(unixTime);
+		let time = dateObj.toDateString();
 		return time;
 	};
 	threeWayOddsCalculation = (oneOdds, twoOdds, drawOdds) => {
@@ -91,18 +109,18 @@ class App extends React.Component {
 		currentGame.teamOneOdds = 0;
 		currentGame.teamTwoOdds = 0;
 		currentGame.drawOdds = 0;
-		for (let site in game.site) {
-			if (site.odds.h2h[0] > currentGame.teamOneOdds) {
-				currentGame.teamOneOdds = site.odds.h2h[0];
-				currentGame.teamOneOddsSite = site.site_nice;
+		for (let i = 0; i < game.sites.length; i++) {
+			if (game.sites[i].odds.h2h[0] > currentGame.teamOneOdds) {
+				currentGame.teamOneOdds = game.sites[i].odds.h2h[0];
+				currentGame.teamOneOddsSite = game.sites[i].site_nice;
 			}
-			if (site.odds.h2h[1] > currentGame.teamTwoOdds) {
-				currentGame.teamTwoOdds = site.odds.h2h[1];
-				currentGame.teamTwoOddsSite = site.site_nice;
+			if (game.sites[i].odds.h2h[1] > currentGame.teamTwoOdds) {
+				currentGame.teamTwoOdds = game.sites[i].odds.h2h[1];
+				currentGame.teamTwoOddsSite = game.sites[i].site_nice;
 			}
-			if (site.odds.h2h[2] > currentGame.drawOdds) {
-				currentGame.drawOdds = site.odds.h2h[2];
-				currentGame.drawOddsSite = site.site_nice;
+			if (game.sites[i].odds.h2h[2] > currentGame.drawOdds) {
+				currentGame.drawOdds = game.sites[i].odds.h2h[2];
+				currentGame.drawOddsSite = game.sites[i].site_nice;
 			}
 		}
 		currentGame.arbitragePercent = this.threeWayOddsCalculation(
@@ -111,9 +129,9 @@ class App extends React.Component {
 			currentGame.drawOdds
 		);
 		if (currentGame.arbitragePercent > 100) {
-			currentGame.arbitrageOppurtunity = true;
-		} else {
 			currentGame.arbitrageOppurtunity = false;
+		} else {
+			currentGame.arbitrageOppurtunity = true;
 		}
 		return currentGame;
 	}
@@ -123,14 +141,14 @@ class App extends React.Component {
 		currentGame.teamTwo = game.teams[1];
 		currentGame.teamOneOdds = 0;
 		currentGame.teamTwoOdds = 0;
-		for (let site in game.site) {
-			if (site.odds.h2h[0] > currentGame.teamOneOdds) {
-				currentGame.teamOneOdds = site.odds.h2h[0];
-				currentGame.teamOneOddsSite = site.site_nice;
+		for (let i = 0; i < game.sites.length; i++) {
+			if (game.sites[i].odds.h2h[0] > currentGame.teamOneOdds) {
+				currentGame.teamOneOdds = game.sites[i].odds.h2h[0];
+				currentGame.teamOneOddsSite = game.sites[i].site_nice;
 			}
-			if (site.odds.h2h[1] > currentGame.teamTwoOdds) {
-				currentGame.teamTwoOdds = site.odds.h2h[1];
-				currentGame.teamTwoOddsSite = site.site_nice;
+			if (game.sites[i].odds.h2h[1] > currentGame.teamTwoOdds) {
+				currentGame.teamTwoOdds = game.sites[i].odds.h2h[1];
+				currentGame.teamTwoOddsSite = game.sites[i].site_nice;
 			}
 		}
 		currentGame.arbitragePercent = this.twoWayOddsCalculation(
@@ -138,9 +156,9 @@ class App extends React.Component {
 			currentGame.teamTwoOdds
 		);
 		if (currentGame.arbitragePercent > 100) {
-			currentGame.arbitrageOppurtunity = true;
-		} else {
 			currentGame.arbitrageOppurtunity = false;
+		} else {
+			currentGame.arbitrageOppurtunity = true;
 		}
 		return currentGame;
 	}

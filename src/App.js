@@ -22,7 +22,7 @@ class App extends React.Component {
 		};
 	}
 	setClickedSport = (clickedSport) => {
-		this.setState({ clickedSport, loading: true }, async () => {
+		this.setState({ clickedSport, loading: true, games: [] }, async () => {
 			try {
 				await this.callToAPI(clickedSport);
 				await this.setFormattedGames();
@@ -53,25 +53,35 @@ class App extends React.Component {
 						loading={this.state.loading}
 					/>
 				)}
+				<div className="container">
+					{this.state.games.length === 0 && (
+						<h1>No Odds data to display</h1>
+					)}
+				</div>
 			</div>
 		);
 	}
 	formatGamesObject = async () => {
+		this.setState({ formattedGames: [] });
 		let formattedGames = [];
 		let games = this.state.games;
-		console.log('games', this.state.games);
 		let currentGame;
 		for (let i = 0; i < games.length; i++) {
-			let lines = games[i].sites[0].odds.h2h.length;
-			if (lines === 3) {
-				currentGame = this.createThreeLinesObject(games[i]);
-				currentGame.lines = 3;
+			if (games[i].sites_count > 0) {
+				let lines = games[i].sites[0].odds.h2h.length;
+				if (lines === 3) {
+					currentGame = this.createThreeLinesObject(games[i]);
+					currentGame.lines = 3;
+				} else {
+					currentGame = this.createTwoLinesObject(games[i]);
+					currentGame.lines = 2;
+				}
+				currentGame.startTime = this.getCurrentTime(
+					games[i].commence_time
+				);
+				formattedGames.push(currentGame);
 			} else {
-				currentGame = this.createTwoLinesObject(games[i]);
-				currentGame.lines = 2;
 			}
-			currentGame.startTime = this.getCurrentTime(games[i].commence_time);
-			formattedGames.push(currentGame);
 		}
 		return formattedGames;
 	};
@@ -85,7 +95,7 @@ class App extends React.Component {
 			.catch((error) => console.log(error));
 	}
 	getCurrentTime = (unixTime) => {
-		let dateObj = new Date(unixTime);
+		let dateObj = new Date(unixTime * 1000);
 		let time = dateObj.toDateString();
 		return time;
 	};

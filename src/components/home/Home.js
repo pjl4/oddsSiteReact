@@ -10,7 +10,6 @@ class Home extends Component {
 		};
 	}
 	componentDidMount() {
-		console.log('component did mount');
 		axios
 			.get(url)
 			.then((res) => {
